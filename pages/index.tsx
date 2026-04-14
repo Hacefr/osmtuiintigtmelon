@@ -18,11 +18,11 @@ interface HomeProps {
 export default function Home({ client }: HomeProps) {
 	const router = useRouter();
 
-	useEffect(() => {
-		if (localStorage.getItem("remember") === "true" || client) {
-			router.push("/login");
-		}
-	}, []);
+useEffect(() => {
+    // Hi
+    router.push("/login");
+}, [router]);
+
 
 	const features = [
 		{
