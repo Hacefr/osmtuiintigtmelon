@@ -1,17 +1,13 @@
 import React, { useState, useEffect } from "react";
 import "../styles/globals.css";
-import StudentVue from "studentvue";
 import { useRouter } from "next/router";
 import { Flowbite, Toast } from "flowbite-react";
 import Topbar from "../components/TopBar";
 import SideBar from "../components/SideBar";
 import MobileBar from "../components/MobileBar";
-import { Grades } from "../utils/grades";
 import Head from "next/head";
-import Script from "next/script";
 import { HiX } from "react-icons/hi";
 import BackgroundColor from "../components/BackgroundColor";
-import { AnimateSharedLayout } from "framer-motion";
 
 const noShowNav = ["/login", "/", "/privacy", "/letter"];
 
@@ -21,22 +17,31 @@ function MyApp({ Component, pageProps }) {
 	const [client, setClient] = useState(undefined);
 	const [studentInfo, setStudentInfo] = useState(undefined);
 	const [toasts, setToasts] = useState([]);
-	const [grades, setGrades] = useState();
-	const [period, setPeriod] = useState();
 	const [loading, setLoading] = useState(false);
 
 	const login = async (username, password, save, url) => {
 		setLoading(true);
 		try {
-			// FIXED: Added 'as any' to bypass TypeScript type errors while providing 
-			// the required appVersion to satisfy StudentVUE servers (Error UPD5304-00)
-			const res = await StudentVue.login(url || districtURL, { 
-				username, 
-				password, 
-				appVersion: "5.3.0" 
-			} as any);
+			// This sends the login request to your RENDER backend
+			const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/login`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ 
+					url: url || districtURL, 
+					username, 
+					password 
+				})
+			});
 			
-			setClient(res);
+			const data = await response.json();
+			
+			if (!data.success) {
+				throw new Error(data.message || "Login failed");
+			}
+
+			// Store the client data returned from your backend
+			setClient(data.client);
+
 			if (save) {
 				localStorage.setItem("remember", "true");
 				localStorage.setItem("username", username);
@@ -45,7 +50,7 @@ function MyApp({ Component, pageProps }) {
 			}
 			setLoading(false);
 			return true;
-		} catch (err) {
+		} catch (err: any) {
 			setToasts((prev) => [...prev, { title: err.message, type: "error" }]);
 			setTimeout(() => setToasts((prev) => prev.slice(1)), 5000);
 			setLoading(false);
@@ -57,7 +62,6 @@ function MyApp({ Component, pageProps }) {
 		setClient(undefined);
 		router.push("/login");
 		setStudentInfo(undefined);
-		setGrades(undefined);
 		localStorage.removeItem("username");
 		localStorage.removeItem("password");
 	};
@@ -75,7 +79,9 @@ function MyApp({ Component, pageProps }) {
 
 	useEffect(() => {
 		if (client !== undefined) {
-			client.studentInfo().then((res) => setStudentInfo(res));
+			// If your backend returns studentInfo, set it here
+			if (client.studentInfo) setStudentInfo(client.studentInfo);
+			
 			if (router.pathname === "/login" || router.pathname === "/") {
 				router.push("/grades");
 			}
@@ -89,7 +95,7 @@ function MyApp({ Component, pageProps }) {
 				{toasts.map(({ title }, i) => (
 					<div className="mb-5 z-50" key={i}>
 						<Toast>
-							<div onClick={() => setToasts((p) => p.filter((_, idx) => idx !== i))} className="text-red-500"><HiX /></div>
+							<div onClick={() => setToasts((p) => p.filter((_, idx) => idx !== i))} className="text-red-500 cursor-pointer"><HiX /></div>
 							<div className="ml-3 text-sm font-normal">{title}</div>
 						</Toast>
 					</div>
@@ -101,10 +107,14 @@ function MyApp({ Component, pageProps }) {
 				{noShowNav.includes(router.pathname) ? (
 					<Component {...pageProps} districtURL={districtURL} setDistrictURL={setDistrictURL} login={login} client={client} loading={loading} />
 				) : (
-					<div className="flex"><SideBar studentInfo={studentInfo} logout={logout} /><Component {...pageProps} client={client} login={login} /></div>
+					<div className="flex">
+						<SideBar studentInfo={studentInfo} logout={logout} />
+						<Component {...pageProps} client={client} login={login} />
+					</div>
 				)}
 			</div>
 		</Flowbite>
 	);
 }
+
 export default MyApp;
