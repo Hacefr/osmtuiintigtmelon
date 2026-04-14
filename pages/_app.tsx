@@ -17,7 +17,7 @@ const noShowNav = ["/login", "/", "/privacy", "/letter"];
 
 function MyApp({ Component, pageProps }) {
 	const router = useRouter();
-	const [districtURL, setDistrictURL] = useState("https://md-mcps-psv.edupoint.com");
+	const [districtURL, setDistrictURL] = useState("https://edupoint.com");
 	const [client, setClient] = useState(undefined);
 	const [studentInfo, setStudentInfo] = useState(undefined);
 	const [toasts, setToasts] = useState([]);
@@ -29,7 +29,7 @@ function MyApp({ Component, pageProps }) {
 		setLoading(true);
 		try {
 			// FIXED: Added 'as any' to bypass TypeScript type errors while providing 
-			// the required appVersion to satisfy StudentVUE servers
+			// the required appVersion to satisfy StudentVUE servers (Error UPD5304-00)
 			const res = await StudentVue.login(url || districtURL, { 
 				username, 
 				password, 
