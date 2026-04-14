@@ -58,7 +58,8 @@ export default function TopBar({ studentInfo, logout, client }: TopBarProps) {
 							<img
 								src="/osmtuiintigtmelon/assets/logo.png"
 								className="mr-3 h-6 sm:h-9"
-								alt="Grade Melon Logo""")/>>
+								alt="Grade Melon Logo" 
+							/>
 							<span className="self-center text-xl font-semibold whitespace-nowrap dark:text-white">
 								Grade Melon
 							</span>
@@ -92,7 +93,8 @@ export default function TopBar({ studentInfo, logout, client }: TopBarProps) {
 													? `data:image/png;base64,${studentInfo.photo}`
 													: "/osmtuiintigtmelon/assets/default-avatar.svg"
 											}
-											alt="User Icon""")/>>
+											alt="User Icon" 
+										/>
 									</button>
 
 									{dropdown && (
