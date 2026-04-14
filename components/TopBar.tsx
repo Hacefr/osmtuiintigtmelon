@@ -17,7 +17,7 @@ export default function TopBar({ studentInfo, logout, client }: TopBarProps) {
 	const [advertisePWA, setAdvertisePWA] = useState(false);
 
 	useEffect(() => {
-		if (!window.matchMedia("(display-mode: standalone)").matches) {
+		if (typeof window !== "undefined" && !window.matchMedia("(display-mode: standalone)").matches) {
 			if (localStorage.getItem("advertisePWA") === null) {
 				setAdvertisePWA(true);
 			}
