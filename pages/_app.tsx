@@ -1,37 +1,125 @@
-const login = async (username, password, save, url) => {
-    setLoading(true);
-    try {
-        // Ensure NO trailing slash in process.env.NEXT_PUBLIC_BACKEND_URL
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
-        
-        const response = await fetch(`${backendUrl}/login`, {
-            method: 'POST',
-            mode: 'cors', // Explicitly set cors mode
-            headers: { 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ 
-                url: url || districtURL, 
-                username, 
-                password 
-            })
-        });
-        
-        if (response.status === 405) {
-            throw new Error("Server rejected the request method (405). Check backend routing.");
-        }
+import React, { useState, useEffect } from "react";
+import "../styles/globals.css";
+import { useRouter } from "next/router";
+import { Flowbite, Toast } from "flowbite-react";
+import Topbar from "../components/TopBar";
+import SideBar from "../components/SideBar";
+import MobileBar from "../components/MobileBar";
+import Head from "next/head";
+import { HiX } from "react-icons/hi";
+import BackgroundColor from "../components/BackgroundColor";
 
-        const data = await response.json();
-        if (!data.success) throw new Error(data.message || "Login failed");
+const noShowNav = ["/login", "/", "/privacy", "/letter"];
 
-        setClient(data.client);
-        // ... rest of your save logic
-        setLoading(false);
-        return true;
-    } catch (err: any) {
-        setToasts((prev) => [...prev, { title: err.message, type: "error" }]);
-        setLoading(false);
-        return false;
-    }
-};
+function MyApp({ Component, pageProps }) {
+	const router = useRouter();
+	const [districtURL, setDistrictURL] = useState("https://edupoint.com");
+	const [client, setClient] = useState(undefined);
+	const [studentInfo, setStudentInfo] = useState(undefined);
+	const [toasts, setToasts] = useState([]);
+	const [loading, setLoading] = useState(false);
+
+	const login = async (username, password, save, url) => {
+		setLoading(true);
+		try {
+			// Ensure NO trailing slash in the GitHub variable
+			const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+			
+			const response = await fetch(`${backendUrl}/login`, {
+				method: 'POST',
+				mode: 'cors',
+				headers: { 
+					'Content-Type': 'application/json',
+					'Accept': 'application/json'
+				},
+				body: JSON.stringify({ 
+					url: url || districtURL, 
+					username, 
+					password 
+				})
+			});
+			
+			if (response.status === 405) {
+				throw new Error("Server rejected the request (405).");
+			}
+
+			const data = await response.json();
+			if (!data.success) throw new Error(data.message || "Login failed");
+
+			// Set the client data from the backend
+			setClient(data.client);
+
+			if (save) {
+				localStorage.setItem("remember", "true");
+				localStorage.setItem("username", username);
+				localStorage.setItem("password", password);
+				localStorage.setItem("districtURL", districtURL);
+			}
+			setLoading(false);
+			return true;
+		} catch (err: any) {
+			setToasts((prev) => [...prev, { title: err.message, type: "error" }]);
+			setTimeout(() => setToasts((prev) => prev.slice(1)), 5000);
+			setLoading(false);
+			return false;
+		}
+	};
+
+	const logout = async () => {
+		setClient(undefined);
+		router.push("/login");
+		setStudentInfo(undefined);
+		localStorage.removeItem("username");
+		localStorage.removeItem("password");
+	};
+
+	useEffect(() => {
+		let username = localStorage.getItem("username");
+		let password = localStorage.getItem("password");
+		let remember = localStorage.getItem("remember");
+		let storedDistrictURL = localStorage.getItem("districtURL");
+		storedDistrictURL && setDistrictURL(storedDistrictURL);
+		if (remember === "true" && username && password && storedDistrictURL) {
+			login(username, password, true, storedDistrictURL);
+		}
+	}, []);
+
+	useEffect(() => {
+		if (client !== undefined) {
+			if (client.studentInfo) setStudentInfo(client.studentInfo);
+			if (router.pathname === "/login" || router.pathname === "/") {
+				router.push("/grades");
+			}
+		}
+	}, [client]);
+
+	return (
+		<Flowbite>
+			<Head><title>Grade Melon</title></Head>
+			<div className="absolute p-5 z-20">
+				{toasts.map(({ title }, i) => (
+					<div className="mb-5 z-50" key={i}>
+						<Toast>
+							<div onClick={() => setToasts((p) => p.filter((_, idx) => idx !== i))} className="text-red-500 cursor-pointer"><HiX /></div>
+							<div className="ml-3 text-sm font-normal">{title}</div>
+						</Toast>
+					</div>
+				))}
+			</div>
+			<BackgroundColor />
+			<div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-16">
+				<Topbar studentInfo={studentInfo} logout={logout} client={client} />
+				{noShowNav.includes(router.pathname) ? (
+					<Component {...pageProps} districtURL={districtURL} setDistrictURL={setDistrictURL} login={login} client={client} loading={loading} />
+				) : (
+					<div className="flex">
+						<SideBar studentInfo={studentInfo} logout={logout} />
+						<Component {...pageProps} client={client} login={login} />
+					</div>
+				)}
+			</div>
+		</Flowbite>
+	);
+}
+
+export default MyApp;
