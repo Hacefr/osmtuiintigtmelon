@@ -3,27 +3,30 @@ const cors = require('cors');
 const StudentVue = require('studentvue');
 const app = express();
 
-// 1. Better CORS handling
-// Allows your GitHub Pages site to communicate with this server
-app.use(cors({
-    origin: '*', 
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type']
-}));
+// 1. Explicit CORS configuration
+const corsOptions = {
+    origin: 'https://github.io', // Your frontend URL
+    methods: 'GET,POST,OPTIONS',
+    allowedHeaders: 'Content-Type,Authorization',
+    credentials: true,
+    optionsSuccessStatus: 200 // Some legacy browsers choke on 204
+};
 
+app.use(cors(corsOptions));
 app.use(express.json());
 
-// 2. Simple root route for health checks
+// 2. Explicitly handle the OPTIONS pre-flight for the /login route
+app.options('/login', cors(corsOptions));
+
+// 3. Health check route
 app.get('/', (req, res) => {
     res.send('Grade Melon Backend is Live!');
 });
 
-// 3. The Login Route
-// We use an array for the path to handle both /login and /login/ 
-// this fixes the 405 Method Not Allowed error caused by trailing slash redirects
-app.post(['/login', '/login/'], async (req, res) => {
+// 4. Hardened Login Route
+app.post('/login', async (req, res) => {
     const { url, username, password } = req.body;
-    console.log(`Login attempt for: ${username} at ${url}`);
+    console.log(`POST attempt for: ${username}`);
     
     try {
         const client = await StudentVue.login(url, { 
@@ -32,24 +35,14 @@ app.post(['/login', '/login/'], async (req, res) => {
             appVersion: "5.3.0" 
         });
         
-        // Fetch student info immediately so we can send it to the frontend
         const studentInfo = await client.studentInfo();
-        
-        // Send back a success response with the student data
-        res.json({ 
-            success: true, 
-            client: { studentInfo } 
-        });
+        res.json({ success: true, client: { studentInfo } });
     } catch (err) {
         console.error("Login Error:", err.message);
-        res.status(500).json({ 
-            success: false, 
-            message: err.message 
-        });
+        res.status(500).json({ success: false, message: err.message });
     }
 });
 
-// 4. Start the server
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Backend running on port ${PORT}`);
