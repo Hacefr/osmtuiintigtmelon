@@ -46,7 +46,7 @@ function MyApp({ Component, pageProps }) {
 			const data = await response.json();
 			if (!data.success) throw new Error(data.message || "Login failed");
 
-			// Set the client data from the backend
+			// Set the client data from the backend v2
 			setClient(data.client);
 
 			if (save) {
