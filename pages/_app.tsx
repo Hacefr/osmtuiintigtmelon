@@ -23,7 +23,7 @@ function MyApp({ Component, pageProps }) {
 		setLoading(true);
 		try {
 			// This sends the login request to your RENDER backend
-			const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/login`, {
+			const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/login/`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ 
